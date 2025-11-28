@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Seismic Base Shear Calculator (NSCP 2015)</title>
+    
+
+  </head>
+    
+  <body>
+  <!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Seismic Base Shear Calculator (NSCP 2015 + Export)</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg1:#0f1724; --card:#fff; --accent:#e74c3c; --accent-dark:#c0392b; --blue:#2980b9; --muted:#6b7280;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; font-family:Roboto,system-ui,-apple-system,Segoe UI,Arial; background:linear-gradient(180deg,#081224 0%,#0f1724 60%); color:#0f1724;
+  padding:20px; display:flex; justify-content:center;
+}
+.container{ width:100%; max-width:1080px; }
+.card{
+  background:linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.98));
+  border-radius:14px; padding:18px; box-shadow: 0 12px 40px rgba(2,6,23,0.6);
+}
+.header{ display:flex; gap:14px; align-items:center; }
+.logo{ width:84px; height:84px; border-radius:12px; background:#071028; display:flex; align-items:center; justify-content:center; }
+.header h1{ margin:0; font-size:20px; color:#0b1724; }
+.header p{ margin:6px 0 0; color:#475569; font-size:13px; }
+.wave{ height:60px; margin-top:12px; border-radius:8px; overflow:hidden; position:relative; background:linear-gradient(90deg, rgba(231,76,60,0.04), rgba(41,128,185,0.03)); }
+.wave .bar{ position:absolute; left:-40%; top:18px; width:200%; height:18px; background:linear-gradient(90deg, transparent 0 30px, rgba(231,76,60,0.06) 30px 60px); animation:waveMove 6s linear infinite; }
+@keyframes waveMove{ from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+.grid{ display:grid; grid-template-columns:1fr 420px; gap:14px; margin-top:14px; }
+@media(max-width:980px){ .grid{ grid-template-columns:1fr; } .right-col{ order:2; } }
+
+.panel{ background:var(--card); padding:12px; border-radius:10px; box-shadow:0 6px 18px rgba(2,6,23,0.08); }
+.small{ font-size:13px; color:var(--muted); }
+
+.form-row{ display:flex; gap:8px; margin-bottom:10px; }
+.form-row .col{ flex:1; }
+
+label{ display:block; font-weight:700; font-size:13px; margin-bottom:6px; color:#374151; }
+input[type=number], input[type=text], select, textarea { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #e6eef8; font-size:14px; }
+textarea{ resize:vertical; min-height:64px; }
+
+.actions{ display:flex; gap:8px; margin-top:8px; }
+.btn{ padding:10px 12px; border-radius:8px; border:none; cursor:pointer; font-weight:700; }
+.btn-primary{ background:var(--accent); color:#fff; }
+.btn-ghost{ background:transparent; color:var(--blue); border:1px solid rgba(41,128,185,0.12); }
+
+.results{ margin-top:12px; display:flex; gap:12px; flex-wrap:wrap; }
+.result-card{ background:#fff; border-radius:10px; padding:12px; flex:1; min-width:220px; box-shadow:0 8px 24px rgba(2,6,23,0.06); }
+.result-card h3{ margin:0 0 8px; color:var(--blue); }
+
+.table-wrap{ overflow:auto; max-height:360px; border-radius:8px; margin-top:10px; }
+table{ width:100%; border-collapse:collapse; font-size:13px; }
+th, td{ padding:8px; border-bottom:1px solid #f1f5f9; text-align:center; }
+th{ background:#f8fafc; font-weight:700; color:#0f1724; }
+
+.note{ font-size:12px; color:#6b7280; margin-top:8px; }
+
+@keyframes shake{0%{transform:translate(0)}20%{transform:translate(-8px)}40%{transform:translate(8px)}60%{transform:translate(-6px)}80%{transform:translate(6px)}100%{transform:translate(0)}}
+.shake{ animation:shake .45s; }
+
+/* export buttons */
+.export-row{ display:flex; gap:8px; margin-top:10px; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="card" id="rootCard">
+
+      <!-- Header -->
+      <div class="header">
+        <div class="logo" aria-hidden="true">
+          <!-- seismograph icon -->
+          <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" width="56" height="56" aria-hidden="true">
+            <rect width="64" height="64" rx="10" fill="#071028"></rect>
+            <polyline points="6,36 12,24 18,46 26,30 34,44 42,18 50,54 58,34" stroke="#ffb4a6" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="2" y1="36" x2="62" y2="36" stroke="#21303a" stroke-width="0.9"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Seismic Base Shear Calculator (NSCP 2015)</h1>
+          <p class="small">Compute C<sub>s</sub> using NSCP workflow (Ca/Cv→SDS→C<sub>s</sub>) or paste C<sub>s</sub>. Includes w<sub>i</sub>·h<sub>i</sub> distribution and export.</p>
+        </div>
+      </div>
+
+      <div class="wave" aria-hidden="true"><div class="bar"></div></div>
+
+      <!-- main grid -->
+      <div class="grid">
+
+        <!-- left: inputs -->
+        <div class="panel">
+          <label>Seismic coefficient input method</label>
+          <div class="form-row">
+            <div class="col">
+              <label><input type="radio" name="mode" value="ns" checked> NSCP Ca/Cv workflow (recommended)</label>
+            </div>
+            <div class="col">
+              <label><input type="radio" name="mode" value="manual"> Enter C<sub>s</sub> manually</label>
+            </div>
+          </div>
+
+          <!-- NSCP workflow block -->
+          <div id="nsBlock">
+            <label>Mapped spectral values (from PHIVOLCS / maps)</label>
+            <div class="form-row">
+              <div class="col">
+                <label>S<sub>s</sub> (short-period) — e.g., 0.8</label>
+                <input id="Ss" type="number" step="0.01" placeholder="S_s (g)" />
+              </div>
+              <div class="col">
+                <label>S<sub>1</sub> (1-sec) — e.g., 0.25</label>
+                <input id="S1" type="number" step="0.01" placeholder="S_1 (g)" />
+              </div>
+            </div>
+
+            <label>Site class (NSCP / ASCE7 site classes)</label>
+            <select id="siteClass">
+              <option value="C">C — Very dense soil and rock</option>
+              <option value="D">D — Stiff soil</option>
+              <option value="E">E — Soft soil</option>
+              <option value="B">B — Rock</option>
+              <option value="A">A — Hard rock</option>
+            </select>
+
+            <div class="form-row" style="margin-top:8px;">
+              <div class="col">
+                <label>Fa (optional)</label>
+                <input id="Fa" type="number" step="0.01" placeholder="Fa (leave blank to estimate)" />
+              </div>
+              <div class="col">
+                <label>Fv (optional)</label>
+                <input id="Fv" type="number" step="0.01" placeholder="Fv (leave blank to estimate)" />
+              </div>
+            </div>
+
+            <div class="actions" style="margin-top:10px;">
+              <button class="btn btn-ghost" id="estimateFaFvBtn">Estimate Fa / Fv (helper)</button>
+              <div style="flex:1"></div>
+            </div>
+
+            <div class="note" id="estimateNote">If you have NSCP tables, use those Fa/Fv values and paste them above. The estimator provides an approximate Fa/Fv for quick checks — verify with NSCP 2015 tables for final design.</div>
+          </div>
+
+          <!-- manual Cs block -->
+          <div id="manualBlock" style="display:none; margin-top:10px;">
+            <label>Enter design seismic coefficient C<sub>s</sub> (manual)</label>
+            <input id="manualCs" type="number" step="0.0001" placeholder="e.g., 0.08" />
+            <div class="note">If you have Ca/Cv and Ss/S1, you can compute C<sub>s</sub> offline and paste it here.</div>
+          </div>
+
+          <hr style="margin:12px 0; border:none; border-top:1px solid #f1f5f9">
+
+          <!-- building inputs -->
+          <div>
+            <div class="form-row">
+              <div class="col">
+                <label>Number of stories (n)</label>
+                <input id="n" type="number" min="1" step="1" placeholder="e.g., 5" />
+              </div>
+              <div class="col">
+                <label>Typical story height (m)</label>
+                <input id="h" type="number" min="2" step="0.1" placeholder="e.g., 3.0" />
+              </div>
+            </div>
+
+            <label>Total building weight W (kN)</label>
+            <input id="W" type="number" min="0" step="1" placeholder="Total dead + part live (kN), e.g., 6000" />
+
+            <div class="form-row" style="margin-top:8px;">
+              <div class="col">
+                <label>Importance factor I<sub>e</sub></label>
+                <select id="Ie"><option value="1.0">1.00 — Normal</option><option value="1.25">1.25 — Important</option><option value="1.5">1.50 — Essential</option></select>
+              </div>
+              <div class="col">
+                <label>Response reduction R</label>
+                <select id="R"><option value="5">5 — RC Moment Frame</option><option value="4">4 — Steel</option><option value="3">3 — Low ductility</option></select>
+              </div>
+            </div>
+
+            <div style="margin-top:8px;">
+              <label>Distribution method</label>
+              <select id="dist">
+                <option value="wh">wᵢ·hᵢ (mass × height) — recommended</option>
+                <option value="tri">Triangular (i) — simple</option>
+                <option value="equal">Equal mass</option>
+              </select>
+            </div>
+
+            <div id="massInputBox" style="display:none; margin-top:8px;">
+              <label>Per-floor masses (kN) — comma / space separated</label>
+              <textarea id="massesTxt" placeholder="e.g., 1200,1200,1100,1100,1000"></textarea>
+              <div class="note">If left blank, masses are assumed equal (W/n) and scaled to total W.</div>
+            </div>
+          </div>
+
+          <div class="actions" style="margin-top:12px;">
+            <button class="btn btn-primary" id="computeBtn">Compute Seismic Loads</button>
+            <button class="btn btn-ghost" id="clearBtn">Reset</button>
+          </div>
+
+        </div>
+
+        <!-- right column: results & export -->
+        <div class="right-col">
+          <div class="panel">
+            <div class="results" id="results" style="display:none;">
+              <div class="result-card">
+                <h3>Summary</h3>
+                <div class="small">Seismic coefficient C<sub>s</sub></div>
+                <div id="CsOut" style="font-size:20px; font-weight:700; margin-top:6px">—</div>
+
+                <div style="height:10px"></div>
+                <div class="small">Total base shear V</div>
+                <div id="VOut" style="font-size:18px; font-weight:700; margin-top:6px">— kN</div>
+
+                <div class="note" id="methodNote" style="margin-top:8px"></div>
+
+                <div class="export-row">
+                  <button class="btn btn-ghost" id="csvBtn">Export CSV</button>
+                  <button class="btn btn-ghost" id="printBtn">Print / Save PDF</button>
+                </div>
+              </div>
+
+              <div class="result-card" style="flex:1 1 420px;">
+                <h3>Story distribution</h3>
+                <div id="distTxt" class="small">—</div>
+                <div class="table-wrap">
+                  <table id="storyTbl">
+                    <thead><tr><th>Story</th><th>Mass wᵢ (kN)</th><th>wᵢ·hᵢ</th><th>Fᵢ (kN)</th><th>Cumulative (kN)</th></tr></thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div id="disclaimer" class="note" style="margin-top:10px; color:#7b8794;">
+              <strong>Disclaimer:</strong> This tool provides preliminary calculations. For final design, use NSCP 2015 tables for F<sub>a</sub>/F<sub>v</sub>, PHIVOLCS spectral maps (S<sub>s</sub>/S<sub>1</sub>), geotechnical reports, and detailed structural analysis.
+            </div>
+          </div>
+        </div>
+
+      </div> <!-- grid -->
+
+    </div> <!-- card -->
+  </div> <!-- container -->
+
+<script>
+/* Utility & UI wiring */
+const modeEls = document.querySelectorAll('input[name="mode"]');
+const nsBlock = document.getElementById('nsBlock');
+const manualBlock = document.getElementById('manualBlock');
+modeEls.forEach(el => el.addEventListener('change', ()=> {
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  if(mode === 'ns'){ nsBlock.style.display='block'; manualBlock.style.display='none'; }
+  else { nsBlock.style.display='none'; manualBlock.style.display='block'; }
+}));
+
+// show mass input area only for w*h
+document.getElementById('dist').addEventListener('change', ()=>{
+  document.getElementById('massInputBox').style.display = document.getElementById('dist').value === 'wh' ? 'block' : 'none';
+});
+
+// clear
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  // reset inputs
+  document.getElementById('Ss').value=''; document.getElementById('S1').value=''; document.getElementById('Fa').value=''; document.getElementById('Fv').value='';
+  document.getElementById('siteClass').value='C';
+  document.getElementById('manualCs').value='';
+  document.getElementById('n').value=''; document.getElementById('h').value=''; document.getElementById('W').value='';
+  document.getElementById('massesTxt').value=''; document.getElementById('results').style.display='none';
+});
+
+/* Shake helper */
+function doShake(){
+  const root = document.getElementById('rootCard');
+  root.classList.add('shake');
+  setTimeout(()=> root.classList.remove('shake'), 480);
+}
+
+/* Estimate Fa/Fv helper (approximate) -- USER MUST VERIFY WITH NSCP TABLES */
+document.getElementById('estimateFaFvBtn').addEventListener('click', ()=> {
+  // read Ss and S1
+  const Ss = parseFloat(document.getElementById('Ss').value);
+  const S1 = parseFloat(document.getElementById('S1').value);
+  if(isNaN(Ss) || isNaN(S1)){
+    alert('Enter valid S_s and S_1 to estimate Fa/Fv (or paste Fa/Fv manually).');
+    return;
+  }
+  // approximate Fa based on Ss (helper, approximate & conservative)
+  // NOTE: This is a convenience estimator only. Always verify with NSCP 2015 Table values.
+  let Fa = 1.0, Fv = 1.0;
+  // approximate Fa piecewise (conservative)
+  if(Ss < 0.25) Fa = 0.8;
+  else if(Ss < 0.5) Fa = 0.9;
+  else if(Ss < 0.75) Fa = 1.0;
+  else if(Ss < 1.0) Fa = 1.2;
+  else Fa = 1.6;
+
+  // approximate Fv piecewise
+  if(S1 < 0.1) Fv = 0.8;
+  else if(S1 < 0.2) Fv = 0.9;
+  else if(S1 < 0.3) Fv = 1.2;
+  else Fv = 1.6;
+
+  document.getElementById('Fa').value = Fa.toFixed(2);
+  document.getElementById('Fv').value = Fv.toFixed(2);
+  alert('Estimated Fa and Fv (approximate). Verify with NSCP 2015 tables for final design.');
+});
+
+/* Parse masses textarea into array of numbers scaled to W */
+function parseMasses(n, W){
+  const txt = document.getElementById('massesTxt').value.trim();
+  if(!txt) return null;
+  const parts = txt.split(/[\s,;]+/).filter(Boolean);
+  const nums = parts.map(p => parseFloat(p)).filter(x => !isNaN(x) && x>=0);
+  if(nums.length === 0) return null;
+  // pad or truncate to n
+  if(nums.length < n){
+    const avg = nums.reduce((a,b)=>a+b,0)/nums.length;
+    while(nums.length < n) nums.push(avg);
+  }
+  if(nums.length > n) nums.length = n;
+  // scale so sum = W
+  const sum = nums.reduce((a,b)=>a+b,0);
+  if(sum <= 0) return Array.from({length:n}, ()=> W/n);
+  const scale = W / sum;
+  return nums.map(x => x * scale);
+}
+
+/* Main compute */
+document.getElementById('computeBtn').addEventListener('click', ()=> {
+  doShake();
+  setTimeout(runCompute, 120);
+});
+
+function runCompute(){
+  const mode = document.querySelector('input[name="mode"]:checked').value;
+  const Ie = parseFloat(document.getElementById('Ie').value) || 1.0;
+  const R = parseFloat(document.getElementById('R').value) || 5.0;
+  const dist = document.getElementById('dist').value;
+  const n = parseInt(document.getElementById('n').value,10);
+  const h = parseFloat(document.getElementById('h').value);
+  let W = parseFloat(document.getElementById('W').value);
+
+  if(isNaN(n) || n<=0 || isNaN(h) || h<=0 || isNaN(W) || W<=0){ alert('Enter positive n, h and W'); return; }
+
+  // compute Cs
+  let Cs = null;
+  if(mode === 'manual'){
+    const val = parseFloat(document.getElementById('manualCs').value);
+    if(isNaN(val) || val<=0){ alert('Enter valid manual C_s'); return; }
+    Cs = val;
+  } else {
+    // NSCP Ca/Cv workflow
+    let Fa = parseFloat(document.getElementById('Fa').value);
+    let Fv = parseFloat(document.getElementById('Fv').value);
+    const Ss = parseFloat(document.getElementById('Ss').value);
+    const S1 = parseFloat(document.getElementById('S1').value);
+    const site = document.getElementById('siteClass').value || 'C';
+
+    // if Fa/Fv not provided, require Ss/S1 to estimate
+    if((isNaN(Fa) || isNaN(Fv)) && (isNaN(Ss) || isNaN(S1))){
+      alert('Either provide Fa/Fv OR provide Ss and S1 (so estimator can propose Fa/Fv).');
+      return;
+    }
+
+    // if not provided, estimate Fa/Fv using helper (we already have estimator above)
+    if(isNaN(Fa)) {
+      // reuse estimator logic (conservative helper)
+      if(Ss < 0.25) Fa = 0.8; else if(Ss < 0.5) Fa = 0.9; else if(Ss < 0.75) Fa = 1.0; else if(Ss < 1.0) Fa = 1.2; else Fa = 1.6;
+    }
+    if(isNaN(Fv)) {
+      if(S1 < 0.1) Fv = 0.8; else if(S1 < 0.2) Fv = 0.9; else if(S1 < 0.3) Fv = 1.2; else Fv = 1.6;
+    }
+
+    // compute SMS, SM1, SDS, SD1 per NSCP/ASCE7
+    const SMS = Fa * (isNaN(Ss) ? 0 : Ss);
+    const SM1 = Fv * (isNaN(S1) ? 0 : S1);
+    const SDS = (2/3) * SMS;
+    const SD1 = (2/3) * SM1;
+
+    // design seismic coefficient Cs = (SDS * Ie) / R  (per ASCE7 simplified equivalent)
+    Cs = (SDS * Ie) / R;
+
+    // attach computed auxiliary to UI for transparency
+    // we'll show SMS, SM1, SDS, SD1 later
+    window.__calcAux = { Fa, Fv, SMS, SM1, SDS, SD1 };
+  }
+
+  // compute base shear
+  const V = Cs * W;
+
+  // compute masses array depending on distribution
+  let masses = null;
+  if(dist === 'wh'){
+    masses = parseMasses(n, W);
+    if(!masses) masses = Array.from({length:n}, ()=> W / n);
+  } else {
+    masses = Array.from({length:n}, ()=> W / n);
+  }
+
+  // compute wi*hi vector
+  let wi_hi = [];
+  if(dist === 'wh'){
+    for(let i=0;i<n;i++){
+      wi_hi.push( masses[i] * ((i+1) * h) );
+    }
+  } else if(dist === 'tri'){
+    for(let i=0;i<n;i++){
+      wi_hi.push( (i+1) ); // triangular proportional factors
+    }
+  } else { // equal
+    for(let i=0;i<n;i++){
+      wi_hi.push( masses[i] * ((i+1) * h) );
+    }
+  }
+
+  const sum_wi_hi = wi_hi.reduce((a,b)=>a+b,0);
+  const Fi = wi_hi.map(v => (v / sum_wi_hi) * V);
+
+  // prepare rows (base=1 upward)
+  const tbody = document.querySelector('#storyTbl tbody');
+  tbody.innerHTML = '';
+  let cumulative = 0;
+  for(let i=0;i<n;i++){
+    cumulative += Fi[i];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${i+1}</td><td>${masses[i].toFixed(2)}</td><td>${wi_hi[i].toFixed(2)}</td><td>${Fi[i].toFixed(2)}</td><td>${cumulative.toFixed(2)}</td>`;
+    tbody.appendChild(tr);
+  }
+
+  // output summary
+  document.getElementById('CsOut').textContent = Cs.toFixed(4);
+  document.getElementById('VOut').textContent = V.toFixed(2) + ' kN';
+  const aux = window.__calcAux;
+  if(aux){
+    document.getElementById('methodNote').textContent = `Fa=${aux.Fa.toFixed(2)}, Fv=${aux.Fv.toFixed(2)} | SMS=${aux.SMS.toFixed(3)}, SM1=${aux.SM1.toFixed(3)}, SDS=${aux.SDS.toFixed(3)}, SD1=${aux.SD1.toFixed(3)}`;
+  } else {
+    document.getElementById('methodNote').textContent = `Method: manual C_s or simplified; Distribution: ${dist}`;
+  }
+
+  document.getElementById('distTxt').textContent = `Distribution: ${dist === 'wh' ? 'wᵢ·hᵢ (mass×height)' : (dist==='tri' ? 'triangular (i)' : 'equal mass')}`;
+  document.getElementById('results').style.display = 'flex';
+  // scroll into view
+  document.getElementById('rootCard').scrollIntoView({ behavior:'smooth' });
+}
+
+/* Export CSV */
+document.getElementById('csvBtn').addEventListener('click', ()=>{
+  const CsText = document.getElementById('CsOut').textContent;
+  const VText = document.getElementById('VOut').textContent;
+  if(!CsText || CsText === '—'){ alert('Compute results first'); return; }
+  const rows = [];
+  rows.push(['C_s', CsText.replace(/[^\d.\-]/g,'')]);
+  rows.push(['V_kN', VText.replace(/[^\d.\-]/g,'')]);
+  rows.push([]);
+  rows.push(['story','mass_kN','wi_hi','Fi_kN','cumulative_kN']);
+  document.querySelectorAll('#storyTbl tbody tr').forEach(tr=>{
+    const cols = Array.from(tr.querySelectorAll('td')).map(td=>td.textContent.replace(/,/g,''));
+    rows.push(cols);
+  });
+  const csv = rows.map(r=> r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'seismic_results.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+/* Print / Save PDF (via browser print) */
+document.getElementById('printBtn').addEventListener('click', ()=>{
+  if(document.getElementById('CsOut').textContent === '—'){ alert('Compute results first'); return; }
+  window.print();
+});
+
+/* small UX: allow Enter key to compute */
+document.addEventListener('keydown', (e)=> { if(e.key === 'Enter' && document.activeElement.tagName !== 'TEXTAREA') { document.getElementById('computeBtn').click(); } });
+</script>
+</body>
+</html>
+    
+  </body>
+  
+</html>
